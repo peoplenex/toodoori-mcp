@@ -1,24 +1,43 @@
 {
   "name": "@toodoori/mcp",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "toodoori MCP server — LLM이 toodoori 할 일 관리를 수행하도록 /api/v1을 감싸는 얇은 stdio MCP 서버 (PAT bearer)",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "toodoori",
+    "claude",
+    "todo",
+    "task-management"
+  ],
+  "homepage": "https://github.com/peoplenex/toodoori-server/tree/main/mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peoplenex/toodoori-server.git",
+    "directory": "mcp"
+  },
   "bin": {
     "toodoori-mcp": "dist/index.js"
   },
   "main": "dist/index.js",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "yarn build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
