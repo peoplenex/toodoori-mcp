@@ -1,0 +1,75 @@
+# npm 게시 워크플로우 (@peoplenexteam/toodoori-mcp)
+#
+# 트리거:
+#   1. v* 태그 push (예: v0.1.0) → 릴리스 게시
+#   2. 수동 실행(workflow_dispatch) → Actions 탭 "Run workflow"
+#
+# 필요한 GitHub Secret:
+#   - NPM_TOKEN : npm 액세스 토큰. 2FA 우회를 위해 "Automation"(classic) 또는
+#                 @peoplenexteam 조직 read+write 권한의 Granular 토큰.
+#
+# provenance: 이 레포는 public이라 --provenance(공급망 출처 증명)를 사용한다.
+#   - permissions.id-token: write (OIDC) 필요
+#   - package.json repository.url 이 이 레포와 일치해야 함
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# 동시 게시 방지
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # npm provenance(OIDC)
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Type check
+        run: yarn typecheck
+
+      - name: Build
+        run: yarn build
+
+      # 동일 version이 이미 npm에 있으면 게시를 건너뛴다(재실행/중복 방지).
+      - name: Check published version
+        id: check
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "대상: $NAME@$VERSION"
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "::notice::$NAME@$VERSION 는 이미 게시됨 — 건너뜁니다. 새로 게시하려면 package.json의 version을 올리세요."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        if: steps.check.outputs.skip == 'false'
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

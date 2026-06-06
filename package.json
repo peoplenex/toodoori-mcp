@@ -12,11 +12,10 @@
     "todo",
     "task-management"
   ],
-  "homepage": "https://github.com/peoplenex/toodoori-server/tree/main/mcp#readme",
+  "homepage": "https://github.com/peoplenex/toodoori-mcp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/peoplenex/toodoori-server.git",
-    "directory": "mcp"
+    "url": "git+https://github.com/peoplenex/toodoori-mcp.git"
   },
   "bin": {
     "toodoori-mcp": "dist/index.js"

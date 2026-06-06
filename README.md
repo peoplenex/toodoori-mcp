@@ -1,7 +1,7 @@
 # @peoplenexteam/toodoori-mcp
 
 LLM(Claude 등)이 toodoori 할 일 관리를 수행하도록, 기존 `/api/v1`를 감싸는 **얇은 stdio MCP 서버**입니다.
-인가 로직을 새로 만들지 않고 PAT를 달아 서버 가드 체인을 그대로 거칩니다(설계: [`../docs/ai-integration/mcp-design.md`](../docs/ai-integration/mcp-design.md)).
+인가 로직을 새로 만들지 않고 PAT를 달아 toodoori 서버의 가드 체인을 그대로 거칩니다.
 
 ## 환경변수
 
@@ -48,7 +48,7 @@ yarn install
 yarn build          # tsc → dist/
 ```
 
-등록 시 `command: "node"`, `args: ["<절대경로>/mcp/dist/index.js"]`, `env.TOODOORI_API_BASE: "http://localhost:3100"` (dev 서버 `yarn dev` 필요).
+등록 시 `command: "node"`, `args: ["<클론경로>/toodoori-mcp/dist/index.js"]`, `env.TOODOORI_API_BASE: "http://localhost:3100"` (toodoori 서버 dev 인스턴스 필요).
 
 ## 도구 (24개)
 
@@ -63,15 +63,23 @@ yarn build          # tsc → dist/
 - **에러**: 단일 엔벨로프 `{ error, code, status }`를 그대로 반환(LLM이 `code`로 자가 교정). 4xx는 재시도 금지.
 - **마감일** = `expectedEnd`. "마감 없음"은 `dateField=expectedEnd, dateMatch=null`, "기간 내 또는 없음"은 `dateMatch=rangeOrNull`.
 
-## 배포 (npm publish)
+## 배포 (자동 — GitHub Actions)
+
+`v*` 태그를 push하거나 Actions 탭에서 수동 실행(workflow_dispatch)하면 `.github/workflows/publish.yml`이 npm에 게시합니다(provenance 포함).
 
 ```bash
-yarn build                # prepublishOnly에서도 자동 실행됨
-npm login                 # @peoplenexteam 조직에 접근 가능한 계정
-npm publish               # publishConfig.access=public (스코프 공개 패키지)
+# 새 버전 릴리스
+npm version patch            # package.json version 올리고 커밋 + 태그(vX.Y.Z) 생성
+git push && git push --tags  # 태그 push → Actions가 자동 게시
 ```
 
-- `@peoplenexteam` npm 조직 멤버여야 합니다(조직 생성됨). 패키지명 `@peoplenexteam/toodoori-mcp`.
-- 버전 갱신: `npm version patch|minor` → `npm publish`.
+- **사전 준비(1회)**: npm Automation 토큰을 이 레포의 Secret `NPM_TOKEN`으로 등록.
+- 같은 version은 재게시 불가 → version을 올려야 게시됩니다(워크플로우가 중복이면 건너뜀).
 - `files: ["dist","README.md"]`로 `dist`만 게시됩니다(소스/테스트 제외).
-- `license`는 현재 `MIT` — 조직 정책에 맞게 변경하세요.
+- `license`는 현재 `MIT`.
+
+수동 게시(로컬)도 가능:
+
+```bash
+yarn build && npm publish    # @peoplenexteam 조직 권한 계정으로 npm login 필요
+```
