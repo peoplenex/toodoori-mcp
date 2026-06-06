@@ -39,12 +39,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 주의: registry-url을 주면 setup-node가 .npmrc에 더미 authToken(XXXXX-...)을
+      # 박아 OIDC 신뢰 게시를 가로채 404가 난다. 기본 레지스트리가 npmjs라 생략한다.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Ensure npm supports OIDC (>= 11.5.1)
         run: npm install -g npm@latest
