@@ -1,5 +1,5 @@
 {
-  "name": "@toodoori/mcp",
+  "name": "@peoplenexteam/toodoori-mcp",
   "version": "0.1.0",
   "type": "module",
   "description": "toodoori MCP server — LLM이 toodoori 할 일 관리를 수행하도록 /api/v1을 감싸는 얇은 stdio MCP 서버 (PAT bearer)",

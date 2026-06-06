@@ -1,4 +1,4 @@
-# @toodoori/mcp
+# @peoplenexteam/toodoori-mcp
 
 LLM(Claude 등)이 toodoori 할 일 관리를 수행하도록, 기존 `/api/v1`를 감싸는 **얇은 stdio MCP 서버**입니다.
 인가 로직을 새로 만들지 않고 PAT를 달아 서버 가드 체인을 그대로 거칩니다(설계: [`../docs/ai-integration/mcp-design.md`](../docs/ai-integration/mcp-design.md)).
@@ -23,7 +23,7 @@ Claude Desktop (`claude_desktop_config.json`):
   "mcpServers": {
     "toodoori": {
       "command": "npx",
-      "args": ["-y", "@toodoori/mcp"],
+      "args": ["-y", "@peoplenexteam/toodoori-mcp"],
       "env": {
         "TOODOORI_PAT": "tdr_pat_...",
         "TOODOORI_API_BASE": "https://api.toodoori.com",
@@ -36,7 +36,7 @@ Claude Desktop (`claude_desktop_config.json`):
 Claude Code:
 
 ```bash
-claude mcp add --env TOODOORI_PAT=tdr_pat_... --env TOODOORI_API_BASE=https://api.toodoori.com --transport stdio toodoori -- npx -y @toodoori/mcp
+claude mcp add --env TOODOORI_PAT=tdr_pat_... --env TOODOORI_API_BASE=https://api.toodoori.com --transport stdio toodoori -- npx -y @peoplenexteam/toodoori-mcp
 ```
 
 ## 로컬 개발 (소스에서 직접 실행)
@@ -67,11 +67,11 @@ yarn build          # tsc → dist/
 
 ```bash
 yarn build                # prepublishOnly에서도 자동 실행됨
-npm login                 # @toodoori 조직에 접근 가능한 계정
+npm login                 # @peoplenexteam 조직에 접근 가능한 계정
 npm publish               # publishConfig.access=public (스코프 공개 패키지)
 ```
 
-- `@toodoori` npm 조직이 있어야 합니다(없으면 npm에서 조직 생성, 또는 `name`을 미점유 이름으로 변경).
+- `@peoplenexteam` npm 조직 멤버여야 합니다(조직 생성됨). 패키지명 `@peoplenexteam/toodoori-mcp`.
 - 버전 갱신: `npm version patch|minor` → `npm publish`.
 - `files: ["dist","README.md"]`로 `dist`만 게시됩니다(소스/테스트 제외).
 - `license`는 현재 `MIT` — 조직 정책에 맞게 변경하세요.
