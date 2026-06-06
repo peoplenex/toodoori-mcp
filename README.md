@@ -73,7 +73,7 @@ npm version patch            # package.json version 올리고 커밋 + 태그(vX
 git push && git push --tags  # 태그 push → Actions가 자동 게시
 ```
 
-- **사전 준비(1회)**: npm Automation 토큰을 이 레포의 Secret `NPM_TOKEN`으로 등록.
+- **사전 준비(1회)**: npm 패키지 설정에서 **Trusted Publishing(OIDC)** 등록(owner=`peoplenex`, repo=`toodoori-mcp`, workflow=`publish.yml`, environment 비움) — 토큰/시크릿 불필요.
 - 같은 version은 재게시 불가 → version을 올려야 게시됩니다(워크플로우가 중복이면 건너뜀).
 - `files: ["dist","README.md"]`로 `dist`만 게시됩니다(소스/테스트 제외).
 - `license`는 현재 `MIT`.
