@@ -56,7 +56,7 @@ claude mcp add --scope user toodoori -- npx -y @peoplenexteam/toodoori-mcp
 ## 도구 (24개)
 
 - **읽기(10)**: `list_projects` · `get_project_board` · `get_project_stages` · `search_all_tasks`(전역) · `search_tasks`(프로젝트) · `get_task` · `list_labels` · `list_sub_projects` · `get_sub_project` · `read_attachment`(텍스트는 내용, 바이너리는 다운로드 URL)
-- **쓰기·작업(12)**: `create_task` · `update_task` · `move_task` · `move_tasks` · `update_task_labels` · `archive_task` · `archive_tasks` · `delete_task` · `create_checklist_item` · `update_checklist_item` · `create_task_note` · `upload_task_attachment`(base64, 첨부 권한 필요)
+- **쓰기·작업(12)**: `create_task` · `update_task` · `move_task` · `move_tasks` · `update_task_labels` · `archive_task` · `archive_tasks` · `delete_task` · `create_checklist_item` · `update_checklist_item` · `create_task_note` · `upload_task_attachment`(content 텍스트 또는 filePath 로컬 파일, 첨부 권한 필요)
 - **쓰기·라벨/하위(2)**: `create_label` · `update_sub_project`
 
 ### 규약

@@ -61,6 +61,11 @@ export class ToodooriClient {
       );
     }
 
+    return this.parse<T>(res, method, path);
+  }
+
+  /** 응답 본문을 파싱한다. 에러면 엔벨로프(C2)를 보존해 던지고, 성공이면 { success, data }의 data를 언랩한다. */
+  private async parse<T>(res: Response, method: string, path: string): Promise<T> {
     const text = await res.text();
     let json: unknown;
     try {
@@ -94,6 +99,37 @@ export class ToodooriClient {
   }
   delete<T = unknown>(path: string, body?: unknown, opts: Omit<RequestOptions, 'body'> = {}) {
     return this.request<T>('DELETE', path, { ...opts, body });
+  }
+
+  /**
+   * 파일을 multipart/form-data로 업로드한다(첨부 업로드 등).
+   * base64 인코딩 없이 raw 바이트를 그대로 전송한다 — 서버 multipart 엔드포인트는 `file` 필드를 기대한다.
+   */
+  async postFile<T = unknown>(
+    path: string,
+    file: { bytes: Uint8Array; filename: string; mimeType?: string },
+  ): Promise<T> {
+    const form = new FormData();
+    // Buffer/readFile은 Uint8Array<ArrayBufferLike>라 Blob<ArrayBuffer> 제약과 어긋난다 → ArrayBuffer 기반 뷰로 정규화.
+    const blob = new Blob([new Uint8Array(file.bytes)], { type: file.mimeType || 'application/octet-stream' });
+    form.append('file', blob, file.filename);
+
+    let res: Response;
+    try {
+      // Content-Type(boundary 포함)은 fetch가 FormData로부터 자동 설정한다 — 수동 지정 금지.
+      res = await fetch(this.buildUrl(path), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.cfg.pat}`, Accept: 'application/json' },
+        body: form,
+      });
+    } catch (err) {
+      throw new ToodooriApiError(
+        0,
+        'NETWORK_ERROR',
+        `API 연결 실패(${this.cfg.origin}): ${(err as Error).message}. 서버가 떠 있는지(TOODOORI_API_BASE) 확인하세요.`,
+      );
+    }
+    return this.parse<T>(res, 'POST', path);
   }
 
   /**

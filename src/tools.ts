@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
+import { homedir } from 'node:os';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ToodooriClient, ToodooriApiError } from './client.js';
@@ -31,6 +34,11 @@ function clean<T extends Record<string, unknown>>(obj: T): Partial<T> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
 const idem = () => randomUUID();
+
+/** 선행 `~`/`~/`를 홈 디렉터리로 확장한다(셸이 아닌 직접 호출 시 ~는 확장되지 않으므로). */
+function expandHome(p: string): string {
+  return p === '~' || p.startsWith('~/') ? homedir() + p.slice(1) : p;
+}
 
 // ── 공통 입력 스키마 조각 (ID 계약 B1: 출처/종류 명시) ──
 const projectId = z.string().describe('인코딩된 projectId. list_projects의 project.id에서만 얻는다(파싱·생성 금지).');
@@ -376,17 +384,55 @@ export function registerTools(server: McpServer, api: ToodooriClient): void {
     'upload_task_attachment',
     {
       description:
-        '작업에 첨부 업로드(base64 JSON). 디코드 후 ≤10MB, 실행/위험 확장자 차단. ※ PAT 사용자 역할이 owner/admin/special_user여야 함(아니면 403).',
+        '작업에 파일 첨부. content(텍스트/markdown 내용을 직접) 또는 filePath(로컬 파일 경로) 중 정확히 하나로 전달한다 — base64 인코딩 불필요. 서버에서 ≤10MB, 실행/위험 확장자 차단, MIME 자동 감지. ※ PAT 사용자 역할이 owner/admin/special_user여야 함(아니면 403).',
       inputSchema: {
         projectId,
         taskNumber,
-        originalName: z.string().min(1).describe('원본 파일명(확장자 포함)'),
-        contentBase64: z.string().min(1).describe('base64 인코딩 파일 내용(data URI 접두사 허용)'),
-        mimeType: z.string().optional().describe('클라이언트 MIME(선택, magic-byte 우선)'),
+        content: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('파일로 저장할 텍스트/markdown 내용을 그대로 전달. filePath와 둘 중 하나만.'),
+        filePath: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('업로드할 로컬 파일 경로(바이너리 포함, ~ 확장 지원). content와 둘 중 하나만.'),
+        originalName: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('원본 파일명(확장자 포함). content 사용 시 필수, filePath 사용 시 생략하면 경로의 파일명을 사용.'),
+        mimeType: z.string().optional().describe('클라이언트 MIME(선택, 서버가 magic-byte/확장자로 우선 감지).'),
       },
     },
-    async ({ projectId, taskNumber, ...rest }) =>
-      run(() => api.post(`/projects/${projectId}/tasks/${taskNumber}/attachments/base64`, clean(rest))),
+    async ({ projectId, taskNumber, content, filePath, originalName, mimeType }) =>
+      run(async () => {
+        // content | filePath 중 정확히 하나 (XOR)
+        if ((content === undefined) === (filePath === undefined)) {
+          throw new ToodooriApiError(400, 'VALIDATION_ERROR', 'content 또는 filePath 중 정확히 하나를 전달하세요.');
+        }
+
+        let bytes: Uint8Array;
+        let name: string | undefined = originalName;
+
+        if (content !== undefined) {
+          if (!name) {
+            throw new ToodooriApiError(400, 'VALIDATION_ERROR', 'content 사용 시 originalName(확장자 포함)이 필요합니다.');
+          }
+          bytes = Buffer.from(content, 'utf8');
+        } else {
+          const resolved = expandHome(filePath!);
+          try {
+            bytes = await readFile(resolved);
+          } catch (err) {
+            throw new ToodooriApiError(400, 'FILE_READ_ERROR', `파일을 읽을 수 없습니다(${resolved}): ${(err as Error).message}`);
+          }
+          name = name ?? basename(resolved);
+        }
+
+        return api.postFile(`/projects/${projectId}/tasks/${taskNumber}/attachments`, { bytes, filename: name!, mimeType });
+      }),
   );
 
   server.registerTool(
